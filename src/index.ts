@@ -28,7 +28,13 @@ import {
   DEFAULT_WINDOW_OPTIONS,
 } from './config';
 
-import { altKey, isLinux, isMac, isWindows } from './environment';
+import {
+  altKey,
+  isLinux,
+  isMac,
+  isWinPortable,
+  isWindows,
+} from './environment';
 import {
   isDevMode,
   protocolClient,
@@ -571,11 +577,18 @@ app.on('ready', () => {
   enforceMacOSAppLocation();
 
   // Register App URL
-  if (!app.isDefaultProtocolClient(protocolClient, process.execPath)) {
+  // Skipped for the Windows portable build: it would write a registry entry
+  // on the host machine, pointing at the temporary unpack directory.
+  if (
+    !isWinPortable &&
+    !app.isDefaultProtocolClient(protocolClient, process.execPath)
+  ) {
     app.setAsDefaultProtocolClient(protocolClient, process.execPath);
   }
 
-  if (isWindows) {
+  // Skipped for the Windows portable build: jump list entries are stored in
+  // the host user's profile and would reference the temporary unpack directory.
+  if (isWindows && !isWinPortable) {
     const extraArgs = isDevMode ? `${__dirname} ` : '';
     const iconPath = asarPath(
       join(
