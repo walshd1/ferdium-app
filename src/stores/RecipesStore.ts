@@ -103,7 +103,15 @@ export default class RecipesStore extends TypedStore {
 
     // Check for local updates
     const allJsonFile = asarRecipesPath('all.json');
-    const allJson = readJSONSync(allJsonFile);
+    let allJson: { id: string; version: string }[] = [];
+    try {
+      allJson = readJSONSync(allJsonFile);
+    } catch (error) {
+      console.error(
+        'Could not load the local recipe catalog (all.json)',
+        error,
+      );
+    }
     const localUpdates: string[] = [];
 
     for (const recipe of Object.keys(recipes)) {
