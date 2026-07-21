@@ -1,11 +1,28 @@
 // Note: This file has now become devoid of all references to values deduced from the remote process - all those now live in the `environment-remote.js` file
 
+import { existsSync } from 'node:fs';
 import { arch, release } from 'node:os';
+import { dirname, join } from 'node:path';
 
 export const isMac = process.platform === 'darwin';
 export const isWindows = process.platform === 'win32';
 export const isLinux = process.platform === 'linux';
-export const isWinPortable = process.env.PORTABLE_EXECUTABLE_FILE != null;
+
+// A 'FerdiumAppData' folder next to the executable marks a portable
+// installation that runs in place (e.g. the zip distribution extracted onto a
+// removable drive). The portable installer build signals itself via the
+// PORTABLE_EXECUTABLE_FILE environment variable instead.
+const hasPortableMarkerFolder = (): boolean => {
+  try {
+    return existsSync(join(dirname(process.execPath), 'FerdiumAppData'));
+  } catch {
+    return false;
+  }
+};
+
+export const isWinPortable =
+  process.env.PORTABLE_EXECUTABLE_FILE != null ||
+  (isWindows && hasPortableMarkerFolder());
 
 export const isWayland = isLinux && process.env.XDG_SESSION_TYPE === 'wayland';
 export const isSnap = isLinux && process.env.SNAP != null;

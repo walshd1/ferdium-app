@@ -1,4 +1,4 @@
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import {
   DEV_API_FRANZ_WEBSITE,
   DEV_FRANZ_API,
@@ -11,7 +11,7 @@ import {
   LOCAL_WS_API,
 } from './config';
 import { api as electronApi } from './electron-util';
-import { isWindows } from './environment';
+import { isWinPortable, isWindows } from './environment';
 
 export const { app } = electronApi;
 export const ferdiumVersion: string = app.getVersion();
@@ -26,6 +26,12 @@ if (process.env.FERDIUM_APPDATA_DIR != null) {
     'appData',
     join(process.env.PORTABLE_EXECUTABLE_DIR, `${app.name}AppData`),
   );
+  app.setPath('userData', join(app.getPath('appData'), `${app.name}AppData`));
+} else if (isWinPortable) {
+  // Portable run without the installer stub (zip distribution or a copied
+  // installation with a 'FerdiumAppData' folder next to the executable):
+  // keep all data next to the executable, mirroring the portable build layout.
+  app.setPath('appData', join(dirname(process.execPath), `${app.name}AppData`));
   app.setPath('userData', join(app.getPath('appData'), `${app.name}AppData`));
 } else if (isWindows && process.env.APPDATA != null) {
   app.setPath('appData', process.env.APPDATA);
