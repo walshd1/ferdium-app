@@ -667,7 +667,9 @@ class EditSettingsForm extends Component<IProps, IState> {
                 <H2 className="settings__section_header">
                   {intl.formatMessage(messages.sectionMain)}
                 </H2>
-                <Toggle {...form.$('autoLaunchOnStart').bind()} />
+                {!isWinPortable && (
+                  <Toggle {...form.$('autoLaunchOnStart').bind()} />
+                )}
                 <Toggle {...form.$('runInBackground').bind()} />
                 <Toggle {...form.$('confirmOnQuit').bind()} />
                 <Toggle {...form.$('enableSystemTray').bind()} />
