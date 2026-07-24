@@ -1,7 +1,7 @@
 /* eslint-disable import/first */
 
 import { EventEmitter } from 'node:events';
-import { join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import {
   BrowserWindow,
   app,
@@ -14,7 +14,7 @@ import {
 
 import { initialize } from 'electron-react-titlebar/main';
 import windowStateKeeper from 'electron-window-state';
-import { emptyDirSync, ensureFileSync } from 'fs-extra';
+import { copySync, emptyDirSync, ensureFileSync, existsSync } from 'fs-extra';
 import minimist from 'minimist';
 import ms from 'ms';
 import { enableWebContents, initializeRemote } from './electron-util';
@@ -569,12 +569,74 @@ if (argv['auth-negotiate-delegate-whitelist']) {
 // Apply workaround for https://github.com/electron/electron/pull/26432
 app.commandLine.appendSwitch('disable-features', 'CrossOriginOpenerPolicy');
 
+// On the first portable run, offer to copy Ferdium data found on the host
+// machine (left behind by a previous non-portable run) onto the portable
+// device. The data on the host is never modified or removed.
+const offerHostDataImportForPortable = () => {
+  if (!isWinPortable || process.env.APPDATA == null) {
+    return;
+  }
+
+  try {
+    const hostDataDir = join(process.env.APPDATA, app.name);
+    const portableDataDir = app.getPath('userData');
+    const portableHasData = existsSync(join(portableDataDir, 'server.sqlite'));
+    const hostHasData = existsSync(join(hostDataDir, 'server.sqlite'));
+    if (portableHasData || !hostHasData) {
+      return;
+    }
+
+    const copyButtonIndex = 0;
+    const selection = dialog.showMessageBoxSync({
+      type: 'question',
+      message: 'Existing Ferdium data found on this computer',
+      detail:
+        'Copy your services, workspaces and logins to the portable data folder?\n\n' +
+        `From: ${hostDataDir}\n` +
+        `To: ${portableDataDir}\n\n` +
+        'The data on this computer is left untouched. Ferdium restarts after copying.',
+      buttons: ['Copy to portable device', 'Start fresh'],
+      defaultId: copyButtonIndex,
+      cancelId: 1,
+    });
+
+    if (selection === copyButtonIndex) {
+      // Disposable cache directories are skipped to keep the copy small.
+      const skippedTopLevelDirs = new Set([
+        'Cache',
+        'Code Cache',
+        'GPUCache',
+        'DawnCache',
+        'Crashpad',
+        'logs',
+      ]);
+      copySync(hostDataDir, portableDataDir, {
+        overwrite: true,
+        filter: source =>
+          !(
+            dirname(source) === hostDataDir &&
+            skippedTopLevelDirs.has(basename(source))
+          ),
+      });
+
+      // Settings were already loaded with defaults before the copy, so
+      // restart to pick up the imported configuration cleanly.
+      app.relaunch();
+      app.exit(0);
+    }
+  } catch (error) {
+    console.error('Could not import existing Ferdium data', error);
+  }
+};
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   // force app to live in /Applications
   enforceMacOSAppLocation();
+
+  offerHostDataImportForPortable();
 
   // Register App URL
   // Skipped for the Windows portable build: it would write a registry entry
