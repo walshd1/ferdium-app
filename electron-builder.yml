@@ -52,6 +52,9 @@ rpm:
 # This is the notarization process which allows the app to be opened after download with the minimal warning.
 afterSign: ./build-helpers/notarize.js
 
+# Embeds the portable-mode marker folder into the Windows zip artifact.
+artifactBuildCompleted: ./build-helpers/embed-portable-marker.js
+
 protocols:
   name: Ferdium
   schemes: [ferdium]
@@ -93,8 +96,9 @@ win:
     - target: portable
       arch: [x64, ia32, arm64]
     # Runs in place after extraction - no self-extraction to the host's temp
-    # directory. Create a 'FerdiumAppData' folder next to Ferdium.exe to opt
-    # into portable mode (all data is then stored in that folder).
+    # directory. Ships with a 'FerdiumAppData' marker folder (see
+    # build-helpers/embed-portable-marker.js) so it runs in portable mode out
+    # of the box, storing all data in that folder next to the executable.
     - target: zip
       arch: [x64, ia32, arm64]
   # The name of the CN appearing in the certificate must be present in the publisherName list below
