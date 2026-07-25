@@ -104,7 +104,13 @@ if (isWindows) {
 }
 
 // Initialize Settings
-const settings = new Settings('app', DEFAULT_APP_SETTINGS);
+const settings = new Settings('app', {
+  ...DEFAULT_APP_SETTINGS,
+  // Portable runs default to fully quitting when the window is closed: an
+  // app kept running in the background holds the data files on the removable
+  // drive open, risking corruption when the drive is unplugged.
+  ...(isWinPortable ? { runInBackground: false } : {}),
+});
 const proxySettings = new Settings('proxy');
 const shortcutSettings = new Settings('shortcuts', DEFAULT_SHORTCUTS);
 
