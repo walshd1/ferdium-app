@@ -296,6 +296,15 @@ class EditServiceForm extends Component<IProps, IState> {
     const requiresUserInput =
       !recipe.hasHostedOption && (recipe.hasTeamId || recipe.hasCustomUrl);
 
+    // Judge by whether the required input is actually empty instead of
+    // whether the form was touched: recipes like Bitwarden prefill their
+    // required URL, which otherwise keeps the save button disabled until an
+    // unrelated field is edited.
+    const teamValue = recipe.hasTeamId ? form.$('team').value : '';
+    const customUrlValue = recipe.hasCustomUrl ? form.$('customUrl').value : '';
+    const requiredInputMissing =
+      requiresUserInput && !teamValue && !customUrlValue;
+
     return (
       <div className="settings__main">
         <div className="settings__header">
@@ -559,9 +568,7 @@ class EditServiceForm extends Component<IProps, IState> {
               type="submit"
               label={intl.formatMessage(messages.saveService)}
               htmlForm="form"
-              disabled={
-                action !== 'edit' && form.isPristine && requiresUserInput
-              }
+              disabled={action !== 'edit' && requiredInputMissing}
             />
           )}
         </div>
