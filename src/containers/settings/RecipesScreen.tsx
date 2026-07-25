@@ -35,7 +35,17 @@ class RecipesScreen extends Component<IProps, IState> {
   constructor(props: IProps) {
     super(props);
 
-    this.customRecipes = readJsonSync(asarRecipesPath('all.json'));
+    try {
+      this.customRecipes = readJsonSync(asarRecipesPath('all.json'));
+    } catch (error) {
+      // Without this guard a missing or broken recipe catalog (e.g. a build
+      // made before the recipes were packaged) crashes the whole screen.
+      console.error(
+        'Could not load the local recipe catalog (all.json)',
+        error,
+      );
+      this.customRecipes = [];
+    }
     this.state = {
       needle: null,
       currentFilter: 'featured',

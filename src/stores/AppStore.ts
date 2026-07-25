@@ -48,9 +48,7 @@ const mainWindow = getCurrentWindow();
 
 const executablePath = isMac
   ? remoteProcess.execPath
-  : isWinPortable
-    ? process.env.PORTABLE_EXECUTABLE_FILE
-    : process.execPath;
+  : (process.env.PORTABLE_EXECUTABLE_FILE ?? process.execPath);
 const autoLauncher = new AutoLaunch({
   name: 'Ferdium',
   path: executablePath,
@@ -546,6 +544,15 @@ export default class AppStore extends TypedStore {
   }
 
   @action _launchOnStartup({ enable }) {
+    // The portable build must not write a launch-on-startup entry into the
+    // host machine's registry (it also covers the automatic enable on first
+    // app start).
+    if (isWinPortable) {
+      debug('Ignoring launch on startup request in portable mode');
+      this.autoLaunchOnStart = false;
+      return;
+    }
+
     this.autoLaunchOnStart = enable;
 
     try {
@@ -843,6 +850,10 @@ export default class AppStore extends TypedStore {
   }
 
   async _checkAutoStart() {
+    if (isWinPortable) {
+      return false;
+    }
+
     return autoLauncher.isEnabled() || false;
   }
 

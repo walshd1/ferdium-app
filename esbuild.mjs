@@ -75,12 +75,32 @@ const copyManualAssets = () => {
   fsPkg.outputJsonSync(`${outDir}/buildInfo.json`, buildInfoData);
 };
 
+// A build without the packaged recipes crashes at runtime when the recipe
+// browser is opened, so refuse to build silently broken output.
+const verifyPackagedRecipes = () => {
+  if (!fs.existsSync('./recipes/all.json')) {
+    log(
+      chalk.red(
+        'Recipes are missing or not packaged (recipes/all.json not found).',
+      ),
+    );
+    log(
+      chalk.red(
+        'Run: git submodule update --init --recursive && cd recipes && pnpm i && pnpm package',
+      ),
+    );
+    process.exit(1);
+  }
+};
+
 const runEsbuild = async () => {
   const startTime = performance.now();
 
   const myArgs = process.argv.slice(2);
   const isDev = myArgs.includes('--watch');
   log(chalk.blue('Starting with args'), myArgs);
+
+  verifyPackagedRecipes();
 
   if (fs.existsSync(outDir)) {
     fs.rmSync(outDir, { force: true, recursive: true });

@@ -83,12 +83,19 @@ mac:
     NSFocusStatusUsageDescription: "This app requires focus access for DND functionality"
 
 win:
-  artifactName: "${productName}-${os}-Installer-${version}-${arch}.${ext}"
+  # Fallback name; nsis and portable define their own artifactName, so this
+  # currently applies to the zip target only.
+  artifactName: "${productName}-${os}-Portable-${version}-${arch}.${ext}"
   icon: ./build-helpers/images/icon.ico
   target:
     - target: nsis
       arch: [x64, ia32, arm64]
     - target: portable
+      arch: [x64, ia32, arm64]
+    # Runs in place after extraction - no self-extraction to the host's temp
+    # directory. Create a 'FerdiumAppData' folder next to Ferdium.exe to opt
+    # into portable mode (all data is then stored in that folder).
+    - target: zip
       arch: [x64, ia32, arm64]
   # The name of the CN appearing in the certificate must be present in the publisherName list below
   publisherName: ["Ferdium Contributors", "Ambroise Grau"]
