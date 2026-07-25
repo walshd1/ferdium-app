@@ -635,6 +635,56 @@ const offerHostDataImportForPortable = () => {
   }
 };
 
+// Watch the portable data folder and shut down if the removable drive is
+// pulled or fails. Running on would only accumulate state that can never be
+// persisted and leave the app logged in on the host; exiting immediately -
+// without running shutdown hooks that would write to the missing drive -
+// protects the data that is already on the drive.
+const exitWithoutShutdownHooks = () => app.exit(1);
+
+const startPortableDriveWatchdog = () => {
+  if (!isWinPortable) {
+    return;
+  }
+
+  const dataDir = app.getPath('userData');
+  let missedChecks = 0;
+  const watchdog = setInterval(() => {
+    let accessible = false;
+    try {
+      accessible = existsSync(dataDir);
+    } catch {
+      accessible = false;
+    }
+
+    if (accessible) {
+      missedChecks = 0;
+      return;
+    }
+
+    // Require two consecutive failures so a transient hiccup of the drive
+    // does not shut the app down.
+    missedChecks += 1;
+    if (missedChecks < 2) {
+      return;
+    }
+
+    clearInterval(watchdog);
+    // Do not wait forever for the dialog: the machine may be unattended.
+    setTimeout(exitWithoutShutdownHooks, 15_000);
+    dialog
+      .showMessageBox({
+        type: 'error',
+        message: 'Portable drive disconnected',
+        detail:
+          'Ferdium can no longer reach its data folder and will close immediately to protect the data on the drive. Changes from the last few moments may not have been saved.',
+        buttons: ['Close Ferdium'],
+      })
+      .then(exitWithoutShutdownHooks)
+      .catch(exitWithoutShutdownHooks);
+  }, 5000);
+};
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -687,6 +737,8 @@ app.on('ready', () => {
   initialize();
 
   createWindow();
+
+  startPortableDriveWatchdog();
 });
 
 // This is the worst possible implementation as the webview.webContents based callback doesn't work 🖕

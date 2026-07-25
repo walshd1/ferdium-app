@@ -48,15 +48,31 @@ export default class Settings {
   }
 
   _hydrate(): void {
-    this.store = this._merge(readJsonSync(this.settingsFile));
-    debug('Hydrate store', this.type, this.allSerialized);
+    try {
+      this.store = this._merge(readJsonSync(this.settingsFile));
+      debug('Hydrate store', this.type, this.allSerialized);
+    } catch (error) {
+      // A corrupted or unreadable settings file (e.g. a failing drive) must
+      // not prevent the app from starting - fall back to the defaults.
+      console.error(
+        `Could not read settings file (${this.type}), using defaults`,
+        error,
+      );
+      this.store = { ...this.defaultState };
+    }
   }
 
   _writeFile(): void {
-    outputJsonSync(this.settingsFile, this.store, {
-      spaces: 2,
-    });
-    debug('Write settings file', this.type, this.allSerialized);
+    try {
+      outputJsonSync(this.settingsFile, this.store, {
+        spaces: 2,
+      });
+      debug('Write settings file', this.type, this.allSerialized);
+    } catch (error) {
+      // A vanished or failing drive must not turn every settings update into
+      // an exception - the in-memory settings keep working for this session.
+      console.error(`Could not write settings file (${this.type})`, error);
+    }
   }
 
   get settingsFile(): string {
