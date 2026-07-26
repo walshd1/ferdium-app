@@ -321,18 +321,36 @@ const createWindow = () => {
         });
       }
 
-      contents.setWindowOpenHandler(({ url, disposition }) => {
+      contents.setWindowOpenHandler(({ url, disposition, features }) => {
         // OAuth popups (Google, Microsoft, etc.) are opened via window.open()
         // and need window.opener preserved so the parent can receive the
         // postMessage callback that completes the flow. Allow them as a child
         // BrowserWindow that inherits the service partition.
         if (disposition === 'new-window') {
+          // Login forms are fiddly in a cramped popup. When the site does not
+          // request an explicit size, open at a comfortable fraction of the
+          // main window instead of the tiny Electron default; either way the
+          // window stays resizable and maximizable.
+          const requestsOwnSize = /(?:^|,)\s*width=\d+/.test(features);
+          const bounds = mainWindow?.getBounds();
+          const sizeOverride = requestsOwnSize
+            ? {}
+            : {
+                width: Math.round((bounds?.width ?? 1280) * 0.8),
+                height: Math.round((bounds?.height ?? 960) * 0.85),
+              };
+
           return {
             action: 'allow',
             outlivesOpener: false,
             overrideBrowserWindowOptions: {
               parent: mainWindow,
-              fullscreenable: false,
+              // Child windows in a macOS fullscreen space misbehave, so keep
+              // fullscreen off there; elsewhere allow it.
+              fullscreenable: !isMac,
+              autoHideMenuBar: true,
+              center: true,
+              ...sizeOverride,
               webPreferences: { session: contents.session },
             },
           };
