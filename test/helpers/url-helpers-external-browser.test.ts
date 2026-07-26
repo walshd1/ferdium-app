@@ -112,6 +112,51 @@ describe('openExternalUrl with a custom external browser', () => {
     consoleErrorSpy.mockRestore();
   });
 
+  it('passes the private mode flag for recognized browsers', () => {
+    outputJsonSync(settingsFile(), {
+      externalBrowserPath: '/portable/FirefoxPortable.exe',
+      externalBrowserPrivateMode: true,
+    });
+
+    openExternalUrl('https://ferdium.org/');
+
+    expect(spawnMock).toHaveBeenCalledWith(
+      '/portable/FirefoxPortable.exe',
+      ['-private-window', 'https://ferdium.org/'],
+      { detached: true, stdio: 'ignore' },
+    );
+  });
+
+  it('omits the private mode flag for unrecognized browsers', () => {
+    outputJsonSync(settingsFile(), {
+      externalBrowserPath: '/portable/some-browser',
+      externalBrowserPrivateMode: true,
+    });
+
+    openExternalUrl('https://ferdium.org/');
+
+    expect(spawnMock).toHaveBeenCalledWith(
+      '/portable/some-browser',
+      ['https://ferdium.org/'],
+      { detached: true, stdio: 'ignore' },
+    );
+  });
+
+  it('does not pass a flag when private mode is disabled', () => {
+    outputJsonSync(settingsFile(), {
+      externalBrowserPath: '/portable/chrome.exe',
+      externalBrowserPrivateMode: false,
+    });
+
+    openExternalUrl('https://ferdium.org/');
+
+    expect(spawnMock).toHaveBeenCalledWith(
+      '/portable/chrome.exe',
+      ['https://ferdium.org/'],
+      { detached: true, stdio: 'ignore' },
+    );
+  });
+
   it('does not open invalid urls at all', () => {
     outputJsonSync(settingsFile(), {
       externalBrowserPath: '/portable/browser',

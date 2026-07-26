@@ -350,6 +350,11 @@ const messages = defineMessages({
     defaultMessage:
       'Custom browser executable (leave blank to use the system default browser)',
   },
+  externalBrowserPrivateMode: {
+    id: 'settings.app.form.externalBrowserPrivateMode',
+    defaultMessage:
+      'Open links in a private/incognito window (isolated from the browser profile)',
+  },
   restartDialogTitle: {
     id: 'settings.app.restart.restartDialogTitle',
     defaultMessage: 'Ferdium - Relaunch Application',
@@ -464,6 +469,9 @@ class EditSettingsScreen extends Component<
       enableGPUAcceleration: Boolean(settingsData.enableGPUAcceleration),
       downloadFolderPath: String(settingsData.downloadFolderPath),
       externalBrowserPath: String(settingsData.externalBrowserPath).trim(),
+      externalBrowserPrivateMode: Boolean(
+        settingsData.externalBrowserPrivateMode,
+      ),
       enableGlobalHideShortcut: Boolean(settingsData.enableGlobalHideShortcut),
       showDisabledServices: Boolean(settingsData.showDisabledServices),
       showServiceName: Boolean(settingsData.showServiceName),
@@ -1093,6 +1101,14 @@ class EditSettingsScreen extends Component<
             DEFAULT_APP_SETTINGS.externalBrowserPath,
           ),
           default: DEFAULT_APP_SETTINGS.externalBrowserPath,
+        },
+        externalBrowserPrivateMode: {
+          label: intl.formatMessage(messages.externalBrowserPrivateMode),
+          value: ifUndefined<boolean>(
+            settings.all.app.externalBrowserPrivateMode,
+            DEFAULT_APP_SETTINGS.externalBrowserPrivateMode,
+          ),
+          default: DEFAULT_APP_SETTINGS.externalBrowserPrivateMode,
         },
         darkMode: {
           label: intl.formatMessage(messages.darkMode),

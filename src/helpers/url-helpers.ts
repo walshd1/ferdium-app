@@ -1,5 +1,6 @@
 // This is taken from: https://benjamin-altpeter.de/shell-openexternal-dangers/
 import { spawn } from 'node:child_process';
+import { basename } from 'node:path';
 import { URL } from 'node:url';
 import { shell } from 'electron';
 import { ensureDirSync, existsSync, readJsonSync } from 'fs-extra';
@@ -40,28 +41,64 @@ export async function openPath(folderName: string): Promise<void> {
   shell.openPath(folderName);
 }
 
+interface ExternalBrowserSettings {
+  browserPath: string;
+  privateMode: boolean;
+}
+
 // Reads the settings file directly so this works in the main process, the
 // renderer and the webview preload without extra wiring.
-const getExternalBrowserPath = (): string => {
+const getExternalBrowserSettings = (): ExternalBrowserSettings => {
   try {
     // eslint-disable-next-line global-require
     const { userDataPath } = require('../environment-remote');
     const settingsFile = userDataPath('config', 'settings.json');
     if (!existsSync(settingsFile)) {
-      return '';
+      return { browserPath: '', privateMode: false };
     }
 
     const settings = readJsonSync(settingsFile);
-    return typeof settings.externalBrowserPath === 'string'
-      ? settings.externalBrowserPath.trim()
-      : '';
+    return {
+      browserPath:
+        typeof settings.externalBrowserPath === 'string'
+          ? settings.externalBrowserPath.trim()
+          : '',
+      privateMode: settings.externalBrowserPrivateMode === true,
+    };
   } catch (error) {
-    debug('Could not read custom browser path from settings', error);
-    return '';
+    debug('Could not read custom browser settings', error);
+    return { browserPath: '', privateMode: false };
   }
 };
 
-const openWithExternalBrowser = (browserPath: string, url: string): void => {
+// The command-line switch that opens a private/incognito window, by browser
+// family. Returns null when the browser is not recognized - the url is then
+// opened normally rather than passing a flag the browser may misinterpret.
+export const privateModeFlag = (browserPath: string): string | null => {
+  const executable = basename(browserPath).toLowerCase();
+  if (
+    /firefox|librewolf|waterfox|palemoon|icecat|mullvad|floorp|zen/.test(
+      executable,
+    )
+  ) {
+    return '-private-window';
+  }
+  if (/msedge|edge/.test(executable)) {
+    return '-inprivate';
+  }
+  if (/opera/.test(executable)) {
+    return '--private';
+  }
+  if (/chrome|chromium|brave|vivaldi|iron|thorium/.test(executable)) {
+    return '--incognito';
+  }
+  return null;
+};
+
+const openWithExternalBrowser = (
+  { browserPath, privateMode }: ExternalBrowserSettings,
+  url: string,
+): void => {
   debug('Open url:', url, 'with custom browser:', browserPath);
   const fallback = (error: Error) => {
     console.error(
@@ -71,8 +108,11 @@ const openWithExternalBrowser = (browserPath: string, url: string): void => {
     shell.openExternal(url);
   };
 
+  const flag = privateMode ? privateModeFlag(browserPath) : null;
+  const args = flag === null ? [url] : [flag, url];
+
   try {
-    const browserProcess = spawn(browserPath, [url], {
+    const browserProcess = spawn(browserPath, args, {
       detached: true,
       stdio: 'ignore',
     });
@@ -93,11 +133,11 @@ export const openExternalUrl = (
   const fixedUrl = fixUrl(url.toString());
   debug('Open url:', fixedUrl, 'with skipValidityCheck:', skipValidityCheck);
   if (skipValidityCheck || isValidExternalURL(fixedUrl)) {
-    const browserPath = getExternalBrowserPath();
-    if (browserPath === '') {
+    const browserSettings = getExternalBrowserSettings();
+    if (browserSettings.browserPath === '') {
       shell.openExternal(fixedUrl.toString());
     } else {
-      openWithExternalBrowser(browserPath, fixedUrl.toString());
+      openWithExternalBrowser(browserSettings, fixedUrl.toString());
     }
   }
 };

@@ -220,6 +220,11 @@ const messages = defineMessages({
     defaultMessage:
       'Open external links with this browser instead of your system default browser (useful for portable browsers). If it cannot be started, Ferdium falls back to the system default browser.',
   },
+  externalBrowserPrivateModeInfo: {
+    id: 'settings.app.externalBrowserPrivateModeInfo',
+    defaultMessage:
+      'Private mode is supported for Firefox-based, Chromium-based, Edge and Opera browsers; unrecognized browsers open links normally.',
+  },
   subheadlineShortcuts: {
     id: 'settings.app.subheadlineShortcuts',
     defaultMessage: 'Shortcuts',
@@ -1240,8 +1245,15 @@ class EditSettingsForm extends Component<IProps, IState> {
                     loaded={!isClearingAllCache}
                   />
 
+                  <Toggle {...form.$('externalBrowserPrivateMode').bind()} />
+
                   <p className="settings__help">
                     {intl.formatMessage(messages.externalBrowserInfo)}
+                  </p>
+                  <p className="settings__help">
+                    {intl.formatMessage(
+                      messages.externalBrowserPrivateModeInfo,
+                    )}
                   </p>
                 </div>
 
