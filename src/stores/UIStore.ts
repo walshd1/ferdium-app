@@ -14,6 +14,8 @@ export default class UIStore extends TypedStore {
 
   @observable isServiceFocusModeActive = false;
 
+  @observable isPresentationModeActive = false;
+
   constructor(stores: Stores, api: ApiInterface, actions: Actions) {
     super(stores, api, actions);
 
@@ -28,6 +30,9 @@ export default class UIStore extends TypedStore {
     );
     this.actions.ui.toggleServiceFocusMode.listen(
       this._toggleServiceFocusMode.bind(this),
+    );
+    this.actions.ui.togglePresentationMode.listen(
+      this._togglePresentationMode.bind(this),
     );
 
     // Listen for theme change
@@ -68,6 +73,11 @@ export default class UIStore extends TypedStore {
   }
 
   @computed get showMessageBadgesEvenWhenMuted() {
+    // Presentation mode suppresses all badges regardless of mute settings.
+    if (this.isPresentationModeActive) {
+      return false;
+    }
+
     const settings = this.stores.settings.all;
 
     return (
@@ -126,6 +136,10 @@ export default class UIStore extends TypedStore {
 
   @action _toggleServiceFocusMode(): void {
     this.isServiceFocusModeActive = !this.isServiceFocusModeActive;
+  }
+
+  @action _togglePresentationMode(): void {
+    this.isPresentationModeActive = !this.isPresentationModeActive;
   }
 
   @action _toggleServiceUpdatedInfoBar({ visible }): void {

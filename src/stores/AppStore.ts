@@ -487,7 +487,11 @@ export default class AppStore extends TypedStore {
 
   // Actions
   @action _notify({ title, options, notificationId, serviceId = null }) {
-    if (this.stores.settings.all.app.isAppMuted) return;
+    if (
+      this.stores.settings.all.app.isAppMuted ||
+      this.stores.ui.isPresentationModeActive
+    )
+      return;
 
     // TODO: is there a simple way to use blobs for notifications without storing them on disk?
     if (options.icon?.startsWith('blob:')) {

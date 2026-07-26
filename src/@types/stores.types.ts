@@ -286,6 +286,8 @@ interface UIStore extends TypedStore {
   isOsDarkThemeActive: () => void;
   showServicesUpdatedInfoBar: boolean;
   isDarkThemeActive: () => void;
+  isServiceFocusModeActive: boolean;
+  isPresentationModeActive: boolean;
   isSplitModeActive: () => void;
   splitColumnsNo: () => void;
   showMessageBadgesEvenWhenMuted: boolean;

@@ -1357,10 +1357,11 @@ export default class ServicesStore extends TypedStore {
   _handleMuteSettings() {
     const { enabled } = this;
     const { isAppMuted } = this.stores.settings.app;
+    const { isPresentationModeActive } = this.stores.ui;
 
     for (const service of enabled) {
       const { isAttached } = service;
-      const isMuted = isAppMuted || service.isMuted;
+      const isMuted = isAppMuted || service.isMuted || isPresentationModeActive;
 
       if (isAttached && service.webview) {
         service.webview.audioMuted = isMuted;

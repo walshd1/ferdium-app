@@ -188,6 +188,7 @@
   "menu.view.toggleFocusMode": "Toggle Focus Mode",
   "menu.view.toggleFullScreen": "Toggle Full Screen",
   "menu.view.toggleNavigationBar": "Toggle Navigation Bar",
+  "menu.view.togglePresentationMode": "Toggle Presentation Mode",
   "menu.view.toggleServiceDevTools": "Toggle Service Developer Tools",
   "menu.view.toggleTodosDevTools": "Toggle Todos Developer Tools",
   "menu.view.zoomIn": "Zoom In",

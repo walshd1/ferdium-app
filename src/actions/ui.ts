@@ -13,4 +13,5 @@ export default <ActionDefinitions>{
     visible: PropTypes.bool,
   },
   toggleServiceFocusMode: {},
+  togglePresentationMode: {},
 };

@@ -148,6 +148,10 @@ export const menuItems = defineMessages({
     id: 'menu.view.toggleFocusMode',
     defaultMessage: 'Toggle Focus Mode',
   },
+  togglePresentationMode: {
+    id: 'menu.view.togglePresentationMode',
+    defaultMessage: 'Toggle Presentation Mode',
+  },
   toggleNavigationBar: {
     id: 'menu.view.toggleNavigationBar',
     defaultMessage: 'Toggle Navigation Bar',
@@ -557,6 +561,15 @@ function titleBarTemplateFactory(
           checked: window['ferdium'].stores.ui.isServiceFocusModeActive,
           click: () => {
             window['ferdium'].actions.ui.toggleServiceFocusMode();
+          },
+        },
+        {
+          label: intl.formatMessage(menuItems.togglePresentationMode),
+          accelerator: `${cmdOrCtrlShortcutKey()}+Shift+P`,
+          type: 'checkbox',
+          checked: window['ferdium'].stores.ui.isPresentationModeActive,
+          click: () => {
+            window['ferdium'].actions.ui.togglePresentationMode();
           },
         },
         {
