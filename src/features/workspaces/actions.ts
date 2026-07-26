@@ -14,6 +14,7 @@ interface WorkspaceActions {
   delete: (workspaceArg: WorkspaceArg) => void;
   update: (workspaceArg: WorkspaceArg) => void;
   toggleKeepAllWorkspacesLoadedSetting: () => void;
+  addServiceToActiveWorkspace: ({ serviceId }: { serviceId: string }) => void;
 }
 
 export default createActionsFromDefinitions<WorkspaceActions>(
@@ -37,6 +38,9 @@ export default createActionsFromDefinitions<WorkspaceActions>(
     toggleWorkspaceDrawer: {},
     openWorkspaceSettings: {},
     toggleKeepAllWorkspacesLoadedSetting: {},
+    addServiceToActiveWorkspace: {
+      serviceId: PropTypes.string.isRequired,
+    },
   },
   PropTypes.checkPropTypes,
 );

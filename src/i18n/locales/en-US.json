@@ -540,6 +540,8 @@
   "setupAssistant.subheadline": "Choose from our most used services and get back on top of your messaging now.",
   "setupAssistant.submit.label": "Let's go",
   "sidebar.addNewService": "Add new service",
+  "sidebar.addServiceToWorkspace": "Add a service to this workspace",
+  "sidebar.allServicesInWorkspace": "All services are already in this workspace",
   "sidebar.closeTodosDrawer": "Close Ferdium Todos",
   "sidebar.closeWorkspaceDrawer": "Close workspace drawer",
   "sidebar.lockFerdium": "Lock Ferdium",

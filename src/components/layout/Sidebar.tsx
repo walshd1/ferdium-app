@@ -1,3 +1,4 @@
+import { Menu } from '@electron/remote';
 import {
   mdiBell,
   mdiBellOff,
@@ -9,6 +10,7 @@ import {
   mdiLock,
   mdiMenu,
   mdiPlusBox,
+  mdiPlusBoxMultiple,
   mdiViewGrid,
   mdiViewSplitVertical,
 } from '@mdi/js';
@@ -33,6 +35,8 @@ import {
 } from '../../environment';
 import { todosStore } from '../../features/todos';
 import { todoActions } from '../../features/todos/actions';
+import { workspaceStore } from '../../features/workspaces';
+import workspaceActions from '../../features/workspaces/actions';
 import globalMessages from '../../i18n/globalMessages';
 import type Service from '../../models/Service';
 import type { RealStores } from '../../stores';
@@ -43,6 +47,14 @@ const messages = defineMessages({
   addNewService: {
     id: 'sidebar.addNewService',
     defaultMessage: 'Add new service',
+  },
+  addServiceToWorkspace: {
+    id: 'sidebar.addServiceToWorkspace',
+    defaultMessage: 'Add a service to this workspace',
+  },
+  allServicesInWorkspace: {
+    id: 'sidebar.allServicesInWorkspace',
+    defaultMessage: 'All services are already in this workspace',
   },
   splitModeToggle: {
     id: 'sidebar.splitModeToggle',
@@ -142,6 +154,36 @@ class Sidebar extends Component<IProps, IState> {
   updateToolTip() {
     this.disableToolTip();
     setTimeout(this.enableToolTip.bind(this));
+  }
+
+  // One-click picker: a native menu of services not yet in the active
+  // workspace; selecting one adds it right away.
+  showAddServiceToWorkspaceMenu() {
+    const { intl, stores } = this.props;
+    const { activeWorkspace } = workspaceStore;
+    if (!activeWorkspace) return;
+
+    const candidates = stores!.services.all.filter(
+      service => !activeWorkspace.services.includes(service.id),
+    );
+
+    const template =
+      candidates.length > 0
+        ? candidates.map(service => ({
+            label: service.name,
+            click: () =>
+              workspaceActions.addServiceToActiveWorkspace({
+                serviceId: service.id,
+              }),
+          }))
+        : [
+            {
+              label: intl.formatMessage(messages.allServicesInWorkspace),
+              enabled: false,
+            },
+          ];
+
+    Menu.buildFromTemplate(template).popup();
   }
 
   render() {
@@ -245,6 +287,19 @@ class Sidebar extends Component<IProps, IState> {
             )} (${addNewServiceShortcutKey(false)})`}
           >
             <Icon icon={mdiPlusBox} size={1.5} />
+          </button>
+        ) : null}
+        {workspaceStore.activeWorkspace && !isMenuCollapsed ? (
+          <button
+            type="button"
+            onClick={() => this.showAddServiceToWorkspaceMenu()}
+            className="sidebar__button sidebar__button--add-to-workspace"
+            data-tooltip-id="tooltip-sidebar-button"
+            data-tooltip-content={intl.formatMessage(
+              messages.addServiceToWorkspace,
+            )}
+          >
+            <Icon icon={mdiPlusBoxMultiple} size={1.5} />
           </button>
         ) : null}
         {!hideSplitModeButton && !isMenuCollapsed ? (

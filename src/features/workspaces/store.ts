@@ -113,6 +113,10 @@ export default class WorkspacesStore extends FeatureStore {
         workspaceActions.toggleKeepAllWorkspacesLoadedSetting,
         this._toggleKeepAllWorkspacesLoadedSetting,
       ],
+      [
+        workspaceActions.addServiceToActiveWorkspace,
+        this._addServiceToActiveWorkspace,
+      ],
     ]);
     this._registerActions(this._allActions);
 
@@ -187,6 +191,28 @@ export default class WorkspacesStore extends FeatureStore {
     this.stores.router.push('/settings/workspaces');
     if (this.activeWorkspace === workspace) {
       this._deactivateActiveWorkspace();
+    }
+  };
+
+  @action _addServiceToActiveWorkspace = async ({
+    serviceId,
+  }: {
+    serviceId: string;
+  }) => {
+    const workspace = this.activeWorkspace;
+    if (!workspace || workspace.services.includes(serviceId)) return;
+
+    try {
+      await updateWorkspaceRequest.execute({
+        id: workspace.id,
+        name: workspace.name,
+        services: [...workspace.services, serviceId],
+      }).promise;
+      if (!workspace.services.includes(serviceId)) {
+        workspace.services.push(serviceId);
+      }
+    } catch (error) {
+      console.error('Could not add service to workspace', error);
     }
   };
 
