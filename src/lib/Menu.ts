@@ -144,6 +144,10 @@ export const menuItems = defineMessages({
     id: 'menu.view.toggleFullScreen',
     defaultMessage: 'Toggle Full Screen',
   },
+  toggleFocusMode: {
+    id: 'menu.view.toggleFocusMode',
+    defaultMessage: 'Toggle Focus Mode',
+  },
   toggleNavigationBar: {
     id: 'menu.view.toggleNavigationBar',
     defaultMessage: 'Toggle Navigation Bar',
@@ -545,6 +549,15 @@ function titleBarTemplateFactory(
             toggleFullScreen();
           },
           accelerator: toggleFullScreenKey(),
+        },
+        {
+          label: intl.formatMessage(menuItems.toggleFocusMode),
+          accelerator: `${cmdOrCtrlShortcutKey()}+Shift+F`,
+          type: 'checkbox',
+          checked: window['ferdium'].stores.ui.isServiceFocusModeActive,
+          click: () => {
+            window['ferdium'].actions.ui.toggleServiceFocusMode();
+          },
         },
         {
           label: intl.formatMessage(menuItems.toggleNavigationBar),

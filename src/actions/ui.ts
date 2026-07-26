@@ -12,4 +12,5 @@ export default <ActionDefinitions>{
   toggleServiceUpdatedInfoBar: {
     visible: PropTypes.bool,
   },
+  toggleServiceFocusMode: {},
 };

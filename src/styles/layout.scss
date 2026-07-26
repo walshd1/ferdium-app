@@ -100,6 +100,19 @@ body.win32:not(.isFullScreen) .app .app__content {
   scroll-snap-type: x proximity;
 }
 
+// Focus mode: the active service edge-to-edge with Ferdium's chrome hidden.
+// Purely presentational - sessions, workspaces and shortcuts keep working.
+body.mode__focus {
+  .sidebar,
+  .workspaces-drawer {
+    display: none;
+  }
+
+  .app .app__content {
+    width: 100%;
+  }
+}
+
 .app {
   background: #fff;
   .app__content {

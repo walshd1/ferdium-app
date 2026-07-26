@@ -12,6 +12,8 @@ export default class UIStore extends TypedStore {
 
   @observable isOsDarkThemeActive = nativeTheme.shouldUseDarkColors;
 
+  @observable isServiceFocusModeActive = false;
+
   constructor(stores: Stores, api: ApiInterface, actions: Actions) {
     super(stores, api, actions);
 
@@ -23,6 +25,9 @@ export default class UIStore extends TypedStore {
     this.actions.ui.closeSettings.listen(this._closeSettings.bind(this));
     this.actions.ui.toggleServiceUpdatedInfoBar.listen(
       this._toggleServiceUpdatedInfoBar.bind(this),
+    );
+    this.actions.ui.toggleServiceFocusMode.listen(
+      this._toggleServiceFocusMode.bind(this),
     );
 
     // Listen for theme change
@@ -53,6 +58,12 @@ export default class UIStore extends TypedStore {
         this._setupColumnsInDOM();
       },
       { fireImmediately: true },
+    );
+    reaction(
+      () => this.isServiceFocusModeActive,
+      () => {
+        this._setupFocusModeInDOM();
+      },
     );
   }
 
@@ -113,6 +124,10 @@ export default class UIStore extends TypedStore {
     this.stores.router.push('/');
   }
 
+  @action _toggleServiceFocusMode(): void {
+    this.isServiceFocusModeActive = !this.isServiceFocusModeActive;
+  }
+
   @action _toggleServiceUpdatedInfoBar({ visible }): void {
     let visibility = visible;
     if (visibility === null) {
@@ -127,6 +142,14 @@ export default class UIStore extends TypedStore {
       document.body.classList.add('theme__dark');
     } else {
       document.body.classList.remove('theme__dark');
+    }
+  }
+
+  _setupFocusModeInDOM(): void {
+    if (this.isServiceFocusModeActive) {
+      document.body.classList.add('mode__focus');
+    } else {
+      document.body.classList.remove('mode__focus');
     }
   }
 
