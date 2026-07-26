@@ -104,7 +104,8 @@ body.win32:not(.isFullScreen) .app .app__content {
 // Purely presentational - sessions, workspaces and shortcuts keep working.
 body.mode__focus {
   .sidebar,
-  .workspaces-drawer {
+  .workspaces-drawer,
+  .info-bar {
     display: none;
   }
 

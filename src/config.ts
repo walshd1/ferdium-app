@@ -592,6 +592,7 @@ export const DEFAULT_APP_SETTINGS = {
   externalBrowserPrivateMode: false,
   additionalAllowedProtocols: '',
   sidebarAutoHide: false,
+  serviceFocusMode: false,
   adaptableDarkMode: true,
   accentColor: DEFAULT_ACCENT_COLOR,
   progressbarAccentColor: DEFAULT_ACCENT_COLOR,

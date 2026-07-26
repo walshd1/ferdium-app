@@ -116,6 +116,7 @@ export interface AppStore extends TypedStore {
   spellcheckerLanguage: string;
   splitMode: boolean;
   splitColumns: number;
+  serviceFocusMode: boolean;
   timeOfflineStart: () => void;
   timeSuspensionStart: () => void;
   updateStatus: () => void;

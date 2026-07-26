@@ -12,8 +12,6 @@ export default class UIStore extends TypedStore {
 
   @observable isOsDarkThemeActive = nativeTheme.shouldUseDarkColors;
 
-  @observable isServiceFocusModeActive = false;
-
   @observable isPresentationModeActive = false;
 
   constructor(stores: Stores, api: ApiInterface, actions: Actions) {
@@ -69,7 +67,14 @@ export default class UIStore extends TypedStore {
       () => {
         this._setupFocusModeInDOM();
       },
+      { fireImmediately: true },
     );
+  }
+
+  // Persisted in settings so a chrome-free setup survives restarts; the
+  // shortcut (Ctrl/Cmd+Shift+F) brings the interface back on demand.
+  @computed get isServiceFocusModeActive(): boolean {
+    return Boolean(this.stores.settings.app.serviceFocusMode);
   }
 
   @computed get showMessageBadgesEvenWhenMuted() {
@@ -135,7 +140,10 @@ export default class UIStore extends TypedStore {
   }
 
   @action _toggleServiceFocusMode(): void {
-    this.isServiceFocusModeActive = !this.isServiceFocusModeActive;
+    this.actions.settings.update({
+      type: 'app',
+      data: { serviceFocusMode: !this.isServiceFocusModeActive },
+    });
   }
 
   @action _togglePresentationMode(): void {
