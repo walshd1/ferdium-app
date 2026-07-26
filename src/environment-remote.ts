@@ -1,3 +1,4 @@
+import { existsSync, readdirSync, renameSync, rmdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
   DEV_API_FRANZ_WEBSITE,
@@ -30,9 +31,39 @@ if (process.env.FERDIUM_APPDATA_DIR != null) {
 } else if (isWinPortable) {
   // Portable run without the installer stub (zip distribution or a copied
   // installation with a 'FerdiumAppData' folder next to the executable):
-  // keep all data next to the executable, mirroring the portable build layout.
-  app.setPath('appData', join(dirname(process.execPath), `${app.name}AppData`));
-  app.setPath('userData', join(app.getPath('appData'), `${app.name}AppData`));
+  // all data lives directly in that marker folder. Earlier builds nested a
+  // second FerdiumAppData level inside it; flatten that once when it is
+  // safe to do so, and keep using the nested layout if it is not.
+  const portableDataDir = join(dirname(process.execPath), `${app.name}AppData`);
+  const legacyDataDir = join(portableDataDir, `${app.name}AppData`);
+  const legacySentinel = join(legacyDataDir, 'config', 'settings.json');
+
+  if (process.type === 'browser' && existsSync(legacySentinel)) {
+    try {
+      const otherEntries = readdirSync(portableDataDir).filter(
+        entry => entry !== `${app.name}AppData`,
+      );
+      // Only flatten when the outer folder holds nothing but the nested
+      // one - anything else could collide and will not be touched.
+      if (otherEntries.length === 0) {
+        for (const entry of readdirSync(legacyDataDir)) {
+          renameSync(join(legacyDataDir, entry), join(portableDataDir, entry));
+        }
+        rmdirSync(legacyDataDir);
+      }
+    } catch (error) {
+      console.error(
+        'Could not flatten the portable data folder, keeping the nested layout',
+        error,
+      );
+    }
+  }
+
+  app.setPath('appData', portableDataDir);
+  app.setPath(
+    'userData',
+    existsSync(legacySentinel) ? legacyDataDir : portableDataDir,
+  );
 } else if (isWindows && process.env.APPDATA != null) {
   app.setPath('appData', process.env.APPDATA);
   app.setPath('userData', join(app.getPath('appData'), app.name));
