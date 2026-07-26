@@ -10,6 +10,7 @@ import {
   deleteWorkspaceRequest,
   getUserWorkspacesRequest,
   updateWorkspaceRequest,
+  workspaceApi,
 } from './api';
 import { WORKSPACES_ROUTES } from './constants';
 
@@ -194,26 +195,36 @@ export default class WorkspacesStore extends FeatureStore {
     }
   };
 
-  @action _addServiceToActiveWorkspace = async ({
+  // Serializes programmatic workspace updates. The shared request object
+  // silently drops calls while one is executing, and concurrent updates
+  // would overwrite each other's service list, so each update runs strictly
+  // after the previous one and reads the service list at execution time.
+  private pendingWorkspaceUpdates: Promise<void> = Promise.resolve();
+
+  @action _addServiceToActiveWorkspace = ({
     serviceId,
   }: {
     serviceId: string;
   }) => {
     const workspace = this.activeWorkspace;
-    if (!workspace || workspace.services.includes(serviceId)) return;
+    if (!workspace) return;
 
-    try {
-      await updateWorkspaceRequest.execute({
-        id: workspace.id,
-        name: workspace.name,
-        services: [...workspace.services, serviceId],
-      }).promise;
-      if (!workspace.services.includes(serviceId)) {
-        workspace.services.push(serviceId);
-      }
-    } catch (error) {
-      console.error('Could not add service to workspace', error);
-    }
+    this.pendingWorkspaceUpdates = this.pendingWorkspaceUpdates
+      .then(async () => {
+        if (workspace.services.includes(serviceId)) return;
+
+        await workspaceApi.updateWorkspace({
+          id: workspace.id,
+          name: workspace.name,
+          services: [...workspace.services, serviceId],
+        });
+        if (!workspace.services.includes(serviceId)) {
+          workspace.services.push(serviceId);
+        }
+      })
+      .catch(error => {
+        console.error('Could not add service to workspace', error);
+      });
   };
 
   @action _update = async ({ workspace }) => {
