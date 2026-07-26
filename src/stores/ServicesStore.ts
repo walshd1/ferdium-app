@@ -11,6 +11,7 @@ import type { ApiInterface } from '../api';
 import { DEFAULT_SERVICE_SETTINGS, KEEP_WS_LOADED_USID } from '../config';
 import { ferdiumVersion } from '../environment-remote';
 import { workspaceStore } from '../features/workspaces';
+import { updateWorkspaceRequest } from '../features/workspaces/api';
 import {
   getDevRecipeDirectory,
   getRecipeDirectory,
@@ -494,6 +495,22 @@ export default class ServicesStore extends TypedStore {
       if (!result) return;
       result.push(response.data);
     });
+
+    // A service created while a workspace is active becomes part of that
+    // workspace right away, so it is visible where it was created.
+    const { activeWorkspace } = workspaceStore;
+    if (activeWorkspace && response.data?.id) {
+      try {
+        await updateWorkspaceRequest.execute({
+          id: activeWorkspace.id,
+          name: activeWorkspace.name,
+          services: [...activeWorkspace.services, response.data.id],
+        }).promise;
+        activeWorkspace.services.push(response.data.id);
+      } catch (error) {
+        console.error('Could not add new service to active workspace', error);
+      }
+    }
 
     this.actions.settings.update({
       type: 'proxy',

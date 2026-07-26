@@ -486,6 +486,7 @@ const generateStyle = (settings, app) => {
     alwaysShowWorkspaces,
     showServiceName,
     useCompactWorkspaceDrawer,
+    sidebarAutoHide,
   } = settings;
 
   const { isFullScreen } = app;
@@ -509,6 +510,21 @@ const generateStyle = (settings, app) => {
     shouldShowDragArea,
     isFullScreen,
   );
+
+  // Collapse the sidebar to a slim hover strip; hovering it brings the full
+  // sidebar back. Applies to the regular vertical sidebar only.
+  if (sidebarAutoHide && !useHorizontalStyle) {
+    style += `
+      .sidebar {
+        width: 14px;
+        overflow: hidden;
+        transition: width 150ms ease-out;
+      }
+      .sidebar:hover {
+        width: ${Number(serviceRibbonWidth)}px;
+      }
+    `;
+  }
 
   style += generateCompactWorkspaceDrawerStyle(
     serviceRibbonWidth,

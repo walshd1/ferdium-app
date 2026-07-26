@@ -962,6 +962,8 @@ class EditSettingsForm extends Component<IProps, IState> {
 
                 <Select field={form.$('serviceRibbonWidth')} />
 
+                <Toggle {...form.$('sidebarAutoHide').bind()} />
+
                 <Select field={form.$('sidebarServicesLocation')} />
 
                 <Toggle {...form.$('useHorizontalStyle').bind()} />

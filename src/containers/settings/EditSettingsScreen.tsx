@@ -216,6 +216,11 @@ const messages = defineMessages({
     id: 'settings.app.form.serviceRibbonWidth',
     defaultMessage: 'Sidebar width',
   },
+  sidebarAutoHide: {
+    id: 'settings.app.form.sidebarAutoHide',
+    defaultMessage:
+      'Auto-hide the sidebar (moving the mouse to the edge brings it back)',
+  },
   sidebarServicesLocation: {
     id: 'settings.app.form.sidebarServicesLocation',
     defaultMessage: 'Sidebar Services Icons Location',
@@ -489,6 +494,7 @@ class EditSettingsScreen extends Component<
       splitMode: Boolean(settingsData.splitMode),
       splitColumns: Number(settingsData.splitColumns),
       serviceRibbonWidth: Number(settingsData.serviceRibbonWidth),
+      sidebarAutoHide: Boolean(settingsData.sidebarAutoHide),
       sidebarServicesLocation: Number(settingsData.sidebarServicesLocation),
       iconSize: Number(settingsData.iconSize),
       enableLongPressServiceHint: Boolean(
@@ -1180,6 +1186,14 @@ class EditSettingsScreen extends Component<
           ),
           default: DEFAULT_APP_SETTINGS.serviceRibbonWidth,
           options: sidebarWidth,
+        },
+        sidebarAutoHide: {
+          label: intl.formatMessage(messages.sidebarAutoHide),
+          value: ifUndefined<boolean>(
+            settings.all.app.sidebarAutoHide,
+            DEFAULT_APP_SETTINGS.sidebarAutoHide,
+          ),
+          default: DEFAULT_APP_SETTINGS.sidebarAutoHide,
         },
         sidebarServicesLocation: {
           label: intl.formatMessage(messages.sidebarServicesLocation),
