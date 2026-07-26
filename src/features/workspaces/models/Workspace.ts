@@ -33,8 +33,10 @@ export default class Workspace {
       services = services.filter(e => e !== KEEP_WS_LOADED_USID);
     }
 
+    // A service must appear in a workspace at most once - duplicated ids
+    // would mount the same service twice.
     // @ts-expect-error Property 'replace' does not exist on type 'never[]'.
-    this.services.replace(services);
+    this.services.replace([...new Set(services)]);
 
     this.userId = data.userId;
   }
