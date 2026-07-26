@@ -9,6 +9,40 @@ import { ALLOWED_PROTOCOLS } from '../config';
 
 const debug = require('../preload-safe-debug')('Ferdium:Helpers:url');
 
+// Reads the settings file directly so this works in the main process, the
+// renderer and the webview preload without extra wiring.
+const readAppSettings = (): Record<string, unknown> => {
+  try {
+    // eslint-disable-next-line global-require
+    const { userDataPath } = require('../environment-remote');
+    const settingsFile = userDataPath('config', 'settings.json');
+    if (!existsSync(settingsFile)) {
+      return {};
+    }
+
+    return readJsonSync(settingsFile);
+  } catch (error) {
+    debug('Could not read app settings', error);
+    return {};
+  }
+};
+
+// User-configured extra protocols (e.g. 'rustdesk, ssh') that may be handed
+// to the operating system's protocol handler.
+const getAdditionalAllowedProtocols = (): string[] => {
+  const settings = readAppSettings();
+  const raw =
+    typeof settings.additionalAllowedProtocols === 'string'
+      ? settings.additionalAllowedProtocols
+      : '';
+
+  return raw
+    .split(',')
+    .map(protocol => protocol.trim().toLowerCase().replace(/:$/, ''))
+    .filter(Boolean)
+    .map(protocol => `${protocol}:`);
+};
+
 export const isValidExternalURL = (url: string | URL): boolean => {
   let parsedUrl: URL;
   try {
@@ -17,7 +51,9 @@ export const isValidExternalURL = (url: string | URL): boolean => {
     return false;
   }
 
-  const isAllowed = ALLOWED_PROTOCOLS.includes(parsedUrl.protocol);
+  const isAllowed =
+    ALLOWED_PROTOCOLS.includes(parsedUrl.protocol) ||
+    getAdditionalAllowedProtocols().includes(parsedUrl.protocol);
   debug('protocol check is', isAllowed, 'for:', url);
 
   return isAllowed;
@@ -46,29 +82,15 @@ interface ExternalBrowserSettings {
   privateMode: boolean;
 }
 
-// Reads the settings file directly so this works in the main process, the
-// renderer and the webview preload without extra wiring.
 const getExternalBrowserSettings = (): ExternalBrowserSettings => {
-  try {
-    // eslint-disable-next-line global-require
-    const { userDataPath } = require('../environment-remote');
-    const settingsFile = userDataPath('config', 'settings.json');
-    if (!existsSync(settingsFile)) {
-      return { browserPath: '', privateMode: false };
-    }
-
-    const settings = readJsonSync(settingsFile);
-    return {
-      browserPath:
-        typeof settings.externalBrowserPath === 'string'
-          ? settings.externalBrowserPath.trim()
-          : '',
-      privateMode: settings.externalBrowserPrivateMode === true,
-    };
-  } catch (error) {
-    debug('Could not read custom browser settings', error);
-    return { browserPath: '', privateMode: false };
-  }
+  const settings = readAppSettings();
+  return {
+    browserPath:
+      typeof settings.externalBrowserPath === 'string'
+        ? settings.externalBrowserPath.trim()
+        : '',
+    privateMode: settings.externalBrowserPrivateMode === true,
+  };
 };
 
 // The command-line switch that opens a private/incognito window, by browser
@@ -130,11 +152,18 @@ export const openExternalUrl = (
   url: string | URL,
   skipValidityCheck: boolean = false,
 ): void => {
-  const fixedUrl = fixUrl(url.toString());
+  const rawUrl = url.toString();
+  // fixUrl only knows how to restore the double slash of http/https/file
+  // urls and would mangle other protocols (rustdesk:// -> rustdesk:/), so
+  // leave those untouched.
+  const fixedUrl = /^(?:https?|file):/i.test(rawUrl) ? fixUrl(rawUrl) : rawUrl;
   debug('Open url:', fixedUrl, 'with skipValidityCheck:', skipValidityCheck);
   if (skipValidityCheck || isValidExternalURL(fixedUrl)) {
     const browserSettings = getExternalBrowserSettings();
-    if (browserSettings.browserPath === '') {
+    // Only web links belong in a browser; anything else (rustdesk:, mailto-
+    // style handlers, ...) always goes to the OS protocol handler.
+    const isWebUrl = /^https?:/i.test(fixedUrl);
+    if (browserSettings.browserPath === '' || !isWebUrl) {
       shell.openExternal(fixedUrl.toString());
     } else {
       openWithExternalBrowser(browserSettings, fixedUrl.toString());

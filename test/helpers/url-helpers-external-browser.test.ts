@@ -157,6 +157,31 @@ describe('openExternalUrl with a custom external browser', () => {
     );
   });
 
+  it('opens additionally allowed protocols with the system handler', () => {
+    outputJsonSync(settingsFile(), {
+      externalBrowserPath: '/portable/browser',
+      additionalAllowedProtocols: 'rustdesk, ssh',
+    });
+
+    openExternalUrl('rustdesk://1234567890');
+
+    // Custom protocols go to the OS handler, never the custom browser,
+    // and keep their double slash intact.
+    expect(openExternalMock).toHaveBeenCalledWith('rustdesk://1234567890');
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  it('still drops custom protocols that are not allowed', () => {
+    outputJsonSync(settingsFile(), {
+      additionalAllowedProtocols: 'ssh',
+    });
+
+    openExternalUrl('rustdesk://1234567890');
+
+    expect(openExternalMock).not.toHaveBeenCalled();
+    expect(spawnMock).not.toHaveBeenCalled();
+  });
+
   it('does not open invalid urls at all', () => {
     outputJsonSync(settingsFile(), {
       externalBrowserPath: '/portable/browser',

@@ -355,6 +355,11 @@ const messages = defineMessages({
     defaultMessage:
       'Open links in a private/incognito window (isolated from the browser profile)',
   },
+  additionalAllowedProtocols: {
+    id: 'settings.app.form.additionalAllowedProtocols',
+    defaultMessage:
+      'Additional link protocols to open with their system handler (comma-separated, e.g. rustdesk, ssh)',
+  },
   restartDialogTitle: {
     id: 'settings.app.restart.restartDialogTitle',
     defaultMessage: 'Ferdium - Relaunch Application',
@@ -472,6 +477,9 @@ class EditSettingsScreen extends Component<
       externalBrowserPrivateMode: Boolean(
         settingsData.externalBrowserPrivateMode,
       ),
+      additionalAllowedProtocols: String(
+        settingsData.additionalAllowedProtocols,
+      ).trim(),
       enableGlobalHideShortcut: Boolean(settingsData.enableGlobalHideShortcut),
       showDisabledServices: Boolean(settingsData.showDisabledServices),
       showServiceName: Boolean(settingsData.showServiceName),
@@ -1109,6 +1117,14 @@ class EditSettingsScreen extends Component<
             DEFAULT_APP_SETTINGS.externalBrowserPrivateMode,
           ),
           default: DEFAULT_APP_SETTINGS.externalBrowserPrivateMode,
+        },
+        additionalAllowedProtocols: {
+          label: intl.formatMessage(messages.additionalAllowedProtocols),
+          value: ifUndefined<string>(
+            settings.all.app.additionalAllowedProtocols,
+            DEFAULT_APP_SETTINGS.additionalAllowedProtocols,
+          ),
+          default: DEFAULT_APP_SETTINGS.additionalAllowedProtocols,
         },
         darkMode: {
           label: intl.formatMessage(messages.darkMode),

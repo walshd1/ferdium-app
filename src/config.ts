@@ -590,6 +590,7 @@ export const DEFAULT_APP_SETTINGS = {
   downloadFolderPath: '',
   externalBrowserPath: '',
   externalBrowserPrivateMode: false,
+  additionalAllowedProtocols: '',
   adaptableDarkMode: true,
   accentColor: DEFAULT_ACCENT_COLOR,
   progressbarAccentColor: DEFAULT_ACCENT_COLOR,

@@ -225,6 +225,11 @@ const messages = defineMessages({
     defaultMessage:
       'Private mode is supported for Firefox-based, Chromium-based, Edge and Opera browsers; unrecognized browsers open links normally.',
   },
+  additionalAllowedProtocolsInfo: {
+    id: 'settings.app.additionalAllowedProtocolsInfo',
+    defaultMessage:
+      'Links with these protocols launch their handler application on this machine (e.g. rustdesk:// opens the RustDesk client). Only add protocols you trust.',
+  },
   subheadlineShortcuts: {
     id: 'settings.app.subheadlineShortcuts',
     defaultMessage: 'Shortcuts',
@@ -1253,6 +1258,20 @@ class EditSettingsForm extends Component<IProps, IState> {
                   <p className="settings__help">
                     {intl.formatMessage(
                       messages.externalBrowserPrivateModeInfo,
+                    )}
+                  </p>
+
+                  <Input
+                    placeholder="rustdesk, ssh"
+                    onChange={e => {
+                      this.submit(e);
+                    }}
+                    {...form.$('additionalAllowedProtocols').bind()}
+                  />
+
+                  <p className="settings__help">
+                    {intl.formatMessage(
+                      messages.additionalAllowedProtocolsInfo,
                     )}
                   </p>
                 </div>
