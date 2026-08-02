@@ -43,6 +43,34 @@ const getAdditionalAllowedProtocols = (): string[] => {
     .map(protocol => `${protocol}:`);
 };
 
+// Hosts of well-known identity providers. Sign-in links are often plain
+// target=_blank links; opening them in an external browser would strand the
+// login outside the service's session, so they must stay in-app.
+const SIGN_IN_HOST_PATTERNS = [
+  /(^|\.)login\.microsoftonline\.com$/,
+  /(^|\.)login\.microsoft\.com$/,
+  /(^|\.)login\.live\.com$/,
+  /(^|\.)login\.windows\.net$/,
+  /(^|\.)account\.microsoft\.com$/,
+  /(^|\.)accounts\.google\.com$/,
+  /(^|\.)appleid\.apple\.com$/,
+  /(^|\.)id\.atlassian\.com$/,
+  /(^|\.)login\.yahoo\.com$/,
+  /(^|\.)okta\.com$/,
+  /(^|\.)onelogin\.com$/,
+  /(^|\.)duosecurity\.com$/,
+  /(^|\.)auth0\.com$/,
+];
+
+export const isSignInUrl = (url: string): boolean => {
+  try {
+    const { hostname } = new URL(url);
+    return SIGN_IN_HOST_PATTERNS.some(pattern => pattern.test(hostname));
+  } catch {
+    return false;
+  }
+};
+
 export const isValidExternalURL = (url: string | URL): boolean => {
   let parsedUrl: URL;
   try {

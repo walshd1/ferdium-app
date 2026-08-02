@@ -58,7 +58,7 @@ import { appId } from './package.json';
 import { asarPath } from './helpers/asar-helpers';
 import { checkIfCertIsPresent } from './helpers/certs-helpers';
 import { translateTo } from './helpers/translation-helpers';
-import { openExternalUrl } from './helpers/url-helpers';
+import { isSignInUrl, openExternalUrl } from './helpers/url-helpers';
 import userAgent from './helpers/userAgent-helpers';
 import generatedTranslations from './i18n/translations';
 import { darkThemeGrayDarkest } from './themes/legacy';
@@ -324,9 +324,13 @@ const createWindow = () => {
       contents.setWindowOpenHandler(({ url, disposition, features }) => {
         // OAuth popups (Google, Microsoft, etc.) are opened via window.open()
         // and need window.opener preserved so the parent can receive the
-        // postMessage callback that completes the flow. Allow them as a child
-        // BrowserWindow that inherits the service partition.
-        if (disposition === 'new-window') {
+        // postMessage callback that completes the flow. Sign-in links to
+        // known identity providers are often plain target=_blank links
+        // (disposition 'foreground-tab') and must equally stay in-app, or
+        // the login would happen in the external browser and never reach
+        // the service's session. Both open as a child BrowserWindow that
+        // inherits the service partition.
+        if (disposition === 'new-window' || isSignInUrl(url)) {
           // Login forms are fiddly in a cramped popup. When the site does not
           // request an explicit size, open at a comfortable fraction of the
           // main window instead of the tiny Electron default; either way the

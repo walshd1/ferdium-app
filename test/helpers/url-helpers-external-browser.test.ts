@@ -23,7 +23,7 @@ jest.mock('../../src/environment-remote', () => ({
 
 // jest.mock is not hoisted above imports by the esbuild-runner transform, so
 // url-helpers has to be loaded after the mocks are registered.
-const { openExternalUrl } =
+const { openExternalUrl, isSignInUrl } =
   // eslint-disable-next-line global-require
   require('../../src/helpers/url-helpers') as typeof import('../../src/helpers/url-helpers');
 
@@ -180,6 +180,19 @@ describe('openExternalUrl with a custom external browser', () => {
 
     expect(openExternalMock).not.toHaveBeenCalled();
     expect(spawnMock).not.toHaveBeenCalled();
+  });
+
+  it('recognizes identity provider urls as sign-in urls', () => {
+    expect(
+      isSignInUrl('https://login.microsoftonline.com/common/oauth2/v2.0'),
+    ).toBe(true);
+    expect(isSignInUrl('https://accounts.google.com/o/oauth2/auth')).toBe(true);
+    expect(isSignInUrl('https://mycompany.okta.com/app/sso')).toBe(true);
+    expect(isSignInUrl('https://ferdium.org/')).toBe(false);
+    expect(isSignInUrl('https://evil.com/login.microsoftonline.com')).toBe(
+      false,
+    );
+    expect(isSignInUrl('not a url')).toBe(false);
   });
 
   it('does not open invalid urls at all', () => {
