@@ -58,7 +58,11 @@ import { appId } from './package.json';
 import { asarPath } from './helpers/asar-helpers';
 import { checkIfCertIsPresent } from './helpers/certs-helpers';
 import { translateTo } from './helpers/translation-helpers';
-import { isSignInUrl, openExternalUrl } from './helpers/url-helpers';
+import {
+  isSameSite,
+  isSignInUrl,
+  openExternalUrl,
+} from './helpers/url-helpers';
 import userAgent from './helpers/userAgent-helpers';
 import generatedTranslations from './i18n/translations';
 import { darkThemeGrayDarkest } from './themes/legacy';
@@ -323,6 +327,20 @@ const createWindow = () => {
 
       contents.setWindowOpenHandler(({ url, disposition, features }) => {
         debug('Window open request', { url, disposition });
+
+        // Link-type opens (target=_blank) that stay on the service's own
+        // site or lead to a sign-in page load inside the service itself -
+        // the same behavior as the context menu's 'Open in Ferdium'. This
+        // keeps login flows and redirector links (e.g. Outlook's sign-in)
+        // in the service's session instead of the external browser.
+        if (
+          (disposition === 'foreground-tab' ||
+            disposition === 'background-tab') &&
+          (isSignInUrl(url) || isSameSite(url, contents.getURL()))
+        ) {
+          contents.loadURL(url);
+          return { action: 'deny' };
+        }
 
         // OAuth popups (Google, Microsoft, etc.) are opened via window.open()
         // and need window.opener preserved so the parent can receive the

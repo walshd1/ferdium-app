@@ -23,7 +23,7 @@ jest.mock('../../src/environment-remote', () => ({
 
 // jest.mock is not hoisted above imports by the esbuild-runner transform, so
 // url-helpers has to be loaded after the mocks are registered.
-const { openExternalUrl, isSignInUrl } =
+const { openExternalUrl, isSignInUrl, isSameSite } =
   // eslint-disable-next-line global-require
   require('../../src/helpers/url-helpers') as typeof import('../../src/helpers/url-helpers');
 
@@ -193,6 +193,22 @@ describe('openExternalUrl with a custom external browser', () => {
       false,
     );
     expect(isSignInUrl('not a url')).toBe(false);
+  });
+
+  it('detects same-site urls by registrable domain', () => {
+    expect(
+      isSameSite('https://login.live.com/x', 'https://outlook.live.com/mail'),
+    ).toBe(true);
+    expect(
+      isSameSite(
+        'https://outlook.office.com/a',
+        'https://outlook.office.com/b',
+      ),
+    ).toBe(true);
+    expect(
+      isSameSite('https://ferdium.org/', 'https://outlook.live.com/'),
+    ).toBe(false);
+    expect(isSameSite('not a url', 'https://outlook.live.com/')).toBe(false);
   });
 
   it('does not open invalid urls at all', () => {

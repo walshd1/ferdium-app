@@ -71,6 +71,25 @@ export const isSignInUrl = (url: string): boolean => {
   }
 };
 
+// Approximation of the registrable domain (last two labels). Not aware of
+// multi-part public suffixes like co.uk, which errs on the side of treating
+// such hosts as related - acceptable for deciding where a link opens.
+const registrableDomain = (hostname: string): string =>
+  hostname.split('.').slice(-2).join('.');
+
+export const isSameSite = (urlA: string, urlB: string): boolean => {
+  try {
+    const a = new URL(urlA);
+    const b = new URL(urlB);
+    if (!a.hostname || !b.hostname) {
+      return false;
+    }
+    return registrableDomain(a.hostname) === registrableDomain(b.hostname);
+  } catch {
+    return false;
+  }
+};
+
 export const isValidExternalURL = (url: string | URL): boolean => {
   let parsedUrl: URL;
   try {
