@@ -41,6 +41,7 @@ import {
 
 import type { AppStore } from '../@types/stores.types';
 import { DEFAULT_APP_SETTINGS } from '../config';
+import { isSignInUrl } from '../helpers/url-helpers';
 import { cleanseJSObject, ifUndefined, safeParseInt } from '../jsUtils';
 import type Service from '../models/Service';
 
@@ -78,7 +79,10 @@ window.open = (url, frameName, features): WindowProxy | null => {
     const checkInterval = setInterval(() => {
       // Has the service changed the URL yet?
       if (newWindow.location.href !== '') {
-        if (features) {
+        if (features || isSignInUrl(newWindow.location.href)) {
+          // Sign-in urls must stay in-app: the real window.open routes
+          // through the main process, which opens them as a child window
+          // sharing this service's session.
           originalWindowOpen(newWindow.location.href, frameName, features);
         } else {
           // Open the new URL
@@ -98,6 +102,13 @@ window.open = (url, frameName, features): WindowProxy | null => {
 
   // We need to differentiate if the link should be opened in a popup or in the systems default browser
   if (!frameName && !features && typeof features !== 'string') {
+    // Sign-in flows (e.g. Outlook's login) call window.open without
+    // features; they must stay in-app with window.opener intact instead of
+    // being handed to the external browser, or the login never reaches the
+    // service's session.
+    if (isSignInUrl(url.toString())) {
+      return originalWindowOpen(url, frameName, features);
+    }
     ipcRenderer.sendToHost('new-window', url);
     return null;
   }

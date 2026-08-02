@@ -322,6 +322,8 @@ const createWindow = () => {
       }
 
       contents.setWindowOpenHandler(({ url, disposition, features }) => {
+        debug('Window open request', { url, disposition });
+
         // OAuth popups (Google, Microsoft, etc.) are opened via window.open()
         // and need window.opener preserved so the parent can receive the
         // postMessage callback that completes the flow. Sign-in links to
