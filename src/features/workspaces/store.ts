@@ -247,12 +247,23 @@ export default class WorkspacesStore extends FeatureStore {
     this.activeWorkspace = workspace;
   }
 
+  // The switch delay exists solely to let the drawer's closing animation
+  // finish uninterrupted. Without a drawer that is about to animate closed
+  // (drawer hidden, always-show enabled, or switching via shortcuts) the
+  // switch should be immediate.
+  _drawerCloseAnimationDuration = () => {
+    const willAnimateDrawerClose =
+      this.isWorkspaceDrawerOpen &&
+      !this.stores.settings.app.alwaysShowWorkspaces;
+    return willAnimateDrawerClose ? getDrawerAnimationDuration() : 0;
+  };
+
   @action _setActivateWorkspace = ({ workspace }) => {
     // Indicate that we are switching to another workspace
     this._setIsSwitchingWorkspace(true);
     this._setNextWorkspace(workspace);
 
-    const animationDuration = getDrawerAnimationDuration();
+    const animationDuration = this._drawerCloseAnimationDuration();
     // Delay switching to next workspace until after drawer animation completes
     // This prevents the service refresh from interrupting the drawer close animation
     setTimeout(() => {
@@ -284,7 +295,7 @@ export default class WorkspacesStore extends FeatureStore {
     this._setNextWorkspace(null);
     this._updateSettings({ lastActiveWorkspace: null });
 
-    const animationDuration = getDrawerAnimationDuration();
+    const animationDuration = this._drawerCloseAnimationDuration();
     // Delay switching to next workspace until after drawer animation completes
     // This prevents the service refresh from interrupting the drawer close animation
     setTimeout(() => {

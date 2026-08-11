@@ -156,6 +156,27 @@ class TabItem extends Component<IProps, IState> {
 
   private pollAnswerTimeoutId: NodeJS.Timeout | null = null;
 
+  private prewarmTimeoutId: NodeJS.Timeout | null = null;
+
+  // Wake a hibernated service when the pointer rests on its tab, so it is
+  // already loading by the time it is clicked. The dwell delay prevents
+  // sweeping the pointer across the sidebar from waking everything.
+  private startHoverPrewarm = (): void => {
+    if (!this.props.service.isHibernating) return;
+    this.prewarmTimeoutId = setTimeout(() => {
+      if (this.props.service.isHibernating) {
+        this.props.wakeUpService();
+      }
+    }, 300);
+  };
+
+  private cancelHoverPrewarm = (): void => {
+    if (this.prewarmTimeoutId) {
+      clearTimeout(this.prewarmTimeoutId);
+      this.prewarmTimeoutId = null;
+    }
+  };
+
   constructor(props) {
     super(props);
 
@@ -234,6 +255,7 @@ class TabItem extends Component<IProps, IState> {
     if (this.pollAnswerTimeoutId) {
       clearTimeout(this.pollAnswerTimeoutId);
     }
+    this.cancelHoverPrewarm();
   }
 
   render() {
@@ -383,6 +405,8 @@ class TabItem extends Component<IProps, IState> {
         onClick={clickHandler}
         onKeyDown={noop}
         role="presentation"
+        onMouseEnter={this.startHoverPrewarm}
+        onMouseLeave={this.cancelHoverPrewarm}
         onContextMenu={() => menu.popup()}
         data-tooltip-id="tooltip-sidebar-button"
         data-tooltip-content={`${service.name} ${acceleratorString({
