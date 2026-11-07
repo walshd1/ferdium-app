@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { clipboard, ipcRenderer, shell } from 'electron';
+import { ipcRenderer, shell } from 'electron';
 import { ensureFileSync, pathExistsSync, writeFileSync } from 'fs-extra';
 import { debounce, remove } from 'lodash';
 import { action, computed, makeObservable, observable, reaction } from 'mobx';
@@ -12,6 +12,7 @@ import { DEFAULT_SERVICE_SETTINGS, KEEP_WS_LOADED_USID } from '../config';
 import { ferdiumVersion } from '../environment-remote';
 import { workspaceStore } from '../features/workspaces';
 import workspaceActions from '../features/workspaces/actions';
+import { writeTextToClipboard } from '../helpers/clipboard-helpers';
 import {
   getDevRecipeDirectory,
   getRecipeDirectory,
@@ -140,6 +141,7 @@ export default class ServicesStore extends TypedStore {
 
     this.registerReactions([
       this._focusServiceReaction.bind(this),
+      this._updateWindowTitleReaction.bind(this),
       this._getUnreadMessageCountReaction.bind(this),
       this._mapActiveServiceToServiceModelReaction.bind(this),
       this._saveActiveService.bind(this),
@@ -296,6 +298,8 @@ export default class ServicesStore extends TypedStore {
         }
       }
 
+      service.retryFailedLoad(this.stores.app.isOnline);
+
       if (
         service.lastPoll &&
         service.lastPoll - service.lastPollAnswer > ms('1m')
@@ -348,7 +352,7 @@ export default class ServicesStore extends TypedStore {
   }
 
   @computed get allDisplayed(): Service[] {
-    const services = this.stores.settings.all.app.showDisabledServices
+    const services = this.stores.settings.app.showDisabledServices
       ? this.all
       : this.enabled;
     return workspaceStore.filterServicesByActiveWorkspace(services);
@@ -356,7 +360,7 @@ export default class ServicesStore extends TypedStore {
 
   // This is just used to avoid unnecessary rerendering of resource-heavy webviews
   @computed get allDisplayedUnordered() {
-    const { showDisabledServices } = this.stores.settings.all.app;
+    const { showDisabledServices } = this.stores.settings.app;
     const { keepAllWorkspacesLoaded } = this.stores.workspaces.settings;
     const services = this.allServicesRequest.execute().result || [];
     const filteredServices = showDisabledServices
@@ -669,6 +673,7 @@ export default class ServicesStore extends TypedStore {
   @action _setActive({ serviceId, keepActiveRoute = null }) {
     if (!keepActiveRoute) this.stores.router.push('/');
     const service = this.one(serviceId);
+    const wasActive = service.isActive;
 
     for (const s of this.all) {
       if (s.isActive) {
@@ -678,6 +683,7 @@ export default class ServicesStore extends TypedStore {
     }
     this._setIsActive(service, true);
     this._awake({ serviceId: service.id });
+    service.retryFailedLoad(this.stores.app.isOnline, true);
 
     if (
       this.isTodosServiceActive &&
@@ -692,7 +698,9 @@ export default class ServicesStore extends TypedStore {
     );
     this.lastUsedServices.unshift(serviceId);
 
-    this._focusActiveService();
+    // A different active service is focused by _focusServiceReaction.
+    // Clicking the current service still needs to restore keyboard focus.
+    if (wasActive) this._focusActiveService();
   }
 
   @action _blurActive() {
@@ -756,10 +764,13 @@ export default class ServicesStore extends TypedStore {
   }
 
   @action _detachService({ service }) {
+    service.userAgentModel.setWebviewReference(null);
     // eslint-disable-next-line no-param-reassign
     service.webview = null;
     // eslint-disable-next-line no-param-reassign
     service.isAttached = false;
+    // eslint-disable-next-line no-param-reassign
+    service.pageTitle = '';
   }
 
   @action _focusService({ serviceId }) {
@@ -776,10 +787,7 @@ export default class ServicesStore extends TypedStore {
       // TODO: add checks to not focus service when router path is /settings or /auth
       const service = this.active;
       if (service) {
-        if (service._webview) {
-          document.title = `Ferdium - ${service.name} ${
-            service.dialogTitle ? ` - ${service.dialogTitle}` : ''
-          } ${service._webview ? `- ${service._webview.getTitle()}` : ''}`;
+        if (service.webview) {
           this._focusService({ serviceId: service.id });
           if (this.stores.settings.app.splitMode && !focusEvent) {
             setTimeout(() => {
@@ -903,7 +911,7 @@ export default class ServicesStore extends TypedStore {
           ) {
             // with the extra "+ " it shows its copied to clipboard in the notification
             options.body = `+ ${rawBody}`;
-            clipboard.writeText(token);
+            writeTextToClipboard(token).catch(console.error);
             debug('Token parsed and copied to clipboard');
           }
         }
@@ -1272,12 +1280,18 @@ export default class ServicesStore extends TypedStore {
 
   // Reactions
   _focusServiceReaction() {
+    if (this.active) {
+      // The action is untracked: title/settings changes must not refocus a page.
+      this._focusActiveService();
+    }
+  }
+
+  _updateWindowTitleReaction() {
     const service = this.active;
     if (service) {
-      this.actions.service.focusService({ serviceId: service.id });
-      document.title = `Ferdium - ${service.name} ${
+      document.title = `Ferdium - ${service.name}${
         service.dialogTitle ? ` - ${service.dialogTitle}` : ''
-      } ${service._webview ? `- ${service._webview.getTitle()}` : ''}`;
+      }${service.pageTitle ? ` - ${service.pageTitle}` : ''}`;
     } else {
       debug('No service is active');
     }

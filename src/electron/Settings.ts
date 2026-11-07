@@ -1,4 +1,5 @@
 import { outputJsonSync, pathExistsSync, readJsonSync } from 'fs-extra';
+import { isEqual } from 'lodash';
 import { makeObservable, observable, toJS } from 'mobx';
 import { userDataPath } from '../environment-remote';
 
@@ -26,9 +27,13 @@ export default class Settings {
   }
 
   set(settings: object): void {
-    this.store = this._merge(settings);
+    const nextSettings = this._merge(settings);
+    if (isEqual(this.store, nextSettings)) {
+      return;
+    }
 
-    this._writeFile();
+    this._writeFile(nextSettings);
+    this.store = nextSettings;
   }
 
   get all(): object {
@@ -44,7 +49,7 @@ export default class Settings {
   }
 
   _merge(settings: object): object {
-    return Object.assign(this.defaultState, this.store, settings);
+    return { ...this.defaultState, ...this.store, ...settings };
   }
 
   _hydrate(): void {
@@ -62,12 +67,12 @@ export default class Settings {
     }
   }
 
-  _writeFile(): void {
+  _writeFile(settings: object = this.store): void {
     try {
-      outputJsonSync(this.settingsFile, this.store, {
+      outputJsonSync(this.settingsFile, settings, {
         spaces: 2,
       });
-      debug('Write settings file', this.type, this.allSerialized);
+      debug('Write settings file', this.type, toJS(settings));
     } catch (error) {
       // A vanished or failing drive must not turn every settings update into
       // an exception - the in-memory settings keep working for this session.
