@@ -30,7 +30,9 @@ $root = Split-Path -Parent $PSScriptRoot
 if ($Build) {
   Push-Location $root
   try {
-    pnpm build --win dir --x64
+    # --publish never: electron-builder 26 otherwise decides to publish
+    # artifacts itself when it believes it is running in CI.
+    pnpm build --win dir --x64 --publish never
     if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE" }
   }
   finally { Pop-Location }
